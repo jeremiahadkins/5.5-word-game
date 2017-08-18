@@ -31,35 +31,61 @@ app.use(session({
 // function to choose word
 let chooseWord= ((req) => {
   let chosenWord = _.sample(words);
-  req.session.blanks = new Array(chosenWord.length).fill(' _ ').join(' ');
+  let chosenWordArray = chosenWord.split('');
+  req.session.blanks = new Array(chosenWordArray.length).fill(' _ ');
   console.log(req.session.blanks);
 
-  req.session.solve = chosenWord;    
+  req.session.chosenWord = chosenWord;
+  req.session.chosenWordArray = chosenWordArray;    
   console.log('request session', req.session);
+  req.session.turnsLeft = 8;
 });
 
 
 // middleware performed on every request
 app.use((req, res, next) => {
-  if(req.session.solve) {
+  // if(letterGuessed.length > 1)
+  if(req.session.chosenWord) {
     next();
   } else {
+    // function to run for first time
     chooseWord(req);
     next();
   }
 });
 
+
 // initial root get request
 app.get('/', (req, res) => {
-  res.render('index', {word: req.session.solve, blanks: req.session.blanks});
+  res.render('index', {word: req.session.chosenWord, blanks: req.session.blanks.join(' '), turnsLeft: req.session.turnsLeft});
 });
 
 
 // post when form is submitted
 app.post('/guess', (req, res) => {
+  // todo: add validation on form with express-validtor isLength
   let letterGuessed = req.body.letterGuessed;
-  console.log('you guessed', letterGuessed);
-  res.render('index', {letterGuessed: letterGuessed, word: req.session.solve, blanks: req.session.blanks});
+  // console.log('you guessed', letterGuessed);
+
+  if (req.session.chosenWordArray.includes(letterGuessed)) {
+
+    req.session.chosenWordArray.forEach((letter, index) => {
+      if (letter === letterGuessed) {
+        req.session.blanks[index] = req.session.chosenWordArray[index];
+      }
+    });
+
+  } else {
+    req.session.turnsLeft = req.session.turnsLeft - 1;
+    // stuff to do when you lose
+  }
+
+  res.render('index', {
+    letterGuessed: letterGuessed, 
+    word: req.session.chosenWord, 
+    blanks: req.session.blanks.join(' '),
+    turnsLeft: req.session.turnsLeft
+  });
 });
 
 
