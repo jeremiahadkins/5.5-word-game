@@ -3,7 +3,7 @@ const morgan = require('morgan');
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const parseurl = require('parseurl');
+// const parseurl = require('parseurl');
 const fs = require('fs');
 let _ = require('lodash');
 const words = fs.readFileSync('/usr/share/dict/words', 'utf-8').toLowerCase().split('\n');
@@ -65,7 +65,6 @@ app.get('/', (req, res) => {
 app.post('/guess', (req, res) => {
   // todo: add validation on form with express-validtor isLength
   let letterGuessed = req.body.letterGuessed;
-  // console.log('you guessed', letterGuessed);
 
   if (req.session.chosenWordArray.includes(letterGuessed)) {
 
@@ -76,8 +75,9 @@ app.post('/guess', (req, res) => {
     });
 
   } else {
-    req.session.turnsLeft = req.session.turnsLeft - 1;
+    req.session.turnsLeft --;
     // stuff to do when you lose
+    // don't let turnsLeft go below 0;
   }
 
   res.render('index', {
