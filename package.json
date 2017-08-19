@@ -16,6 +16,7 @@
     "express": "^4.15.4",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.5",
+    "express-validator": "^3.2.1",
     "lodash": "^4.17.4",
     "morgan": "^1.8.2"
   }

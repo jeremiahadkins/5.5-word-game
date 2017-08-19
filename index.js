@@ -3,20 +3,21 @@ const morgan = require('morgan');
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-// const parseurl = require('parseurl');
+const expressValidator = require('express-validator');
 const fs = require('fs');
-let _ = require('lodash');
+const _ = require('lodash');
 const words = fs.readFileSync('/usr/share/dict/words', 'utf-8').toLowerCase().split('\n');
 
 const app = express();
 
-app.use('/css', express.static(__dirname + '/node_modules/bootstrap/dist/css'));
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
 
 
 // middlewares
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(expressValidator());
+app.use('/css', express.static(__dirname + '/node_modules/bootstrap/dist/css'));
 app.use(morgan('combined'));
 
 
@@ -44,11 +45,9 @@ let chooseWord= ((req) => {
 
 // middleware performed on every request
 app.use((req, res, next) => {
-  // if(letterGuessed.length > 1)
   if(req.session.chosenWord) {
     next();
   } else {
-    // function to run for first time
     chooseWord(req);
     next();
   }
@@ -65,32 +64,52 @@ app.get('/', (req, res) => {
 });
 
 
+let incorrectGuess = ((req) => {
+  if (req.session.turnsLeft === 0) {
+    console.log('you lose');
+    let loseMsg = 'Sorry, you lost!';
+    req.session.loseMsg = loseMsg;
+  } else {
+    req.session.turnsLeft --;
+  }
+});
+
+
+let correctGuess = ((req, letterGuessed) => {
+  req.session.chosenWordArray.forEach((letter, index) => {
+    if (letter === letterGuessed) {
+      req.session.blanks[index] = req.session.chosenWordArray[index];
+    }
+  });
+
+  if (req.session.chosenWordArray.join() === req.session.blanks.join()) {
+    console.log('ya done won');
+    let winMsg = 'ya done won son';
+    req.session.winMsg = winMsg;
+  }
+});
+
+
 // post when form is submitted
 app.post('/guess', (req, res) => {
-  // todo: add validation on form with express-validtor isLength
+  // req.checkBody('letterGuessed', 'Guess must be 1 letter.').isAlpha().isLength({min:1, max:1});
+  // let errors = req.validationErrors();
+
   let letterGuessed = req.body.letterGuessed;
-
+  
   if (req.session.chosenWordArray.includes(letterGuessed)) {
-
-    req.session.chosenWordArray.forEach((letter, index) => {
-      if (letter === letterGuessed) {
-        req.session.blanks[index] = req.session.chosenWordArray[index];
-      }
-    });
-
+    correctGuess(req, letterGuessed);
   } else {
-    if (req.session.turnsLeft === 0) {
-      console.log('you lose');
-    } else {
-      req.session.turnsLeft --;
-    }
+    incorrectGuess(req);
   }
 
   res.render('index', {
     letterGuessed: letterGuessed, 
     word: req.session.chosenWord, 
     blanks: req.session.blanks.join(' '),
-    turnsLeft: req.session.turnsLeft
+    turnsLeft: req.session.turnsLeft,
+    loseMsg: req.session.loseMsg,
+    winMsg: req.session.winMsg
   });
 });
 
