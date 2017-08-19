@@ -57,7 +57,11 @@ app.use((req, res, next) => {
 
 // initial root get request
 app.get('/', (req, res) => {
-  res.render('index', {word: req.session.chosenWord, blanks: req.session.blanks.join(' '), turnsLeft: req.session.turnsLeft});
+  res.render('index', {
+    word: req.session.chosenWord,
+    blanks: req.session.blanks.join(' '),
+    turnsLeft: req.session.turnsLeft
+  });
 });
 
 
@@ -75,9 +79,11 @@ app.post('/guess', (req, res) => {
     });
 
   } else {
-    req.session.turnsLeft --;
-    // stuff to do when you lose
-    // don't let turnsLeft go below 0;
+    if (req.session.turnsLeft === 0) {
+      console.log('you lose');
+    } else {
+      req.session.turnsLeft --;
+    }
   }
 
   res.render('index', {
